@@ -1,0 +1,28 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Testing & Cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environments & IDE
+.venv/
+env/
+venv/
+ENV/
+.vscode/
+.idea/
+
+# Distribution & Build
+build/
+dist/
+*.egg-info/
+*.spec
+
+# Local database / temp
+*.db
+*.sqlite3
+logs/
+temp/
