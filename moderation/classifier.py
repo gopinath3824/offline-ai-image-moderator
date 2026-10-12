@@ -12,7 +12,7 @@ import hashlib
 import time
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from PIL import Image  # type: ignore
 
@@ -100,8 +100,8 @@ class FalconsaiNSFWClassifier(BaseModerationClassifier):
 
     def __init__(self, model_id: str, model_path: Path, device: str = "cpu") -> None:
         super().__init__(model_id, model_path, device)
-        self.model = None
-        self.processor = None
+        self.model: Any = None
+        self.processor: Any = None
 
     def load(self) -> None:
         if not self.model_path.exists():
@@ -132,20 +132,26 @@ class FalconsaiNSFWClassifier(BaseModerationClassifier):
         if not self._is_loaded or self.model is None or self.processor is None:
             self.load()
 
+        if self.model is None or self.processor is None:
+            raise RuntimeError(f"ViT model or processor failed to load: {self.model_id}")
+
+        model = self.model
+        processor = self.processor
+
         if torch is None:
             raise RuntimeError("PyTorch is required for inference.")
 
         # Preprocess PIL image
-        inputs = self.processor(images=image, return_tensors="pt")
+        inputs = processor(images=image, return_tensors="pt")
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
         with torch.no_grad():
-            outputs = self.model(**inputs)
+            outputs = model(**inputs)
             logits = outputs.logits
             probs = torch.nn.functional.softmax(logits, dim=-1)[0].cpu().tolist()
 
         # Map binary labels (0: normal, 1: nsfw)
-        id2label = self.model.config.id2label
+        id2label = model.config.id2label
         nsfw_score = 0.0
 
         for idx, prob in enumerate(probs):
@@ -233,8 +239,8 @@ class CLIPZeroShotClassifier(BaseModerationClassifier):
 
     def __init__(self, model_id: str, model_path: Path, device: str = "cpu") -> None:
         super().__init__(model_id, model_path, device)
-        self.model = None
-        self.processor = None
+        self.model: Any = None
+        self.processor: Any = None
 
     def load(self) -> None:
         if not self.model_path.exists():
@@ -265,13 +271,19 @@ class CLIPZeroShotClassifier(BaseModerationClassifier):
         if not self._is_loaded or self.model is None or self.processor is None:
             self.load()
 
+        if self.model is None or self.processor is None:
+            raise RuntimeError(f"CLIP model or processor failed to load: {self.model_id}")
+
+        model = self.model
+        processor = self.processor
+
         if torch is None:
             raise RuntimeError("PyTorch is required for inference.")
 
         text_labels = [p[0] for p in self.PROMPTS]
         text_prompts = [p[1] for p in self.PROMPTS]
 
-        inputs = self.processor(
+        inputs = processor(
             text=text_prompts,
             images=image,
             return_tensors="pt",
@@ -280,7 +292,7 @@ class CLIPZeroShotClassifier(BaseModerationClassifier):
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
         with torch.no_grad():
-            outputs = self.model(**inputs)
+            outputs = model(**inputs)
             logits_per_image = outputs.logits_per_image  # shape (1, num_prompts)
             probs = torch.nn.functional.softmax(logits_per_image, dim=-1)[0].cpu().tolist()
 
@@ -319,8 +331,8 @@ class AdamCoddNSFWClassifier(BaseModerationClassifier):
 
     def __init__(self, model_id: str, model_path: Path, device: str = "cpu") -> None:
         super().__init__(model_id, model_path, device)
-        self.model = None
-        self.processor = None
+        self.model: Any = None
+        self.processor: Any = None
 
     def load(self) -> None:
         if not self.model_path.exists():
@@ -348,17 +360,23 @@ class AdamCoddNSFWClassifier(BaseModerationClassifier):
         if not self._is_loaded or self.model is None or self.processor is None:
             self.load()
 
+        if self.model is None or self.processor is None:
+            raise RuntimeError(f"AdamCodd model or processor failed to load: {self.model_id}")
+
+        model = self.model
+        processor = self.processor
+
         if torch is None:
             raise RuntimeError("PyTorch is required for inference.")
 
-        inputs = self.processor(images=image, return_tensors="pt")
+        inputs = processor(images=image, return_tensors="pt")
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
         with torch.no_grad():
-            outputs = self.model(**inputs)
+            outputs = model(**inputs)
             probs = torch.nn.functional.softmax(outputs.logits, dim=-1)[0].cpu().tolist()
 
-        id2label = self.model.config.id2label
+        id2label = model.config.id2label
         raw_probs = {id2label[i].lower(): p for i, p in enumerate(probs)}
 
         porn = raw_probs.get("porn", 0.0)

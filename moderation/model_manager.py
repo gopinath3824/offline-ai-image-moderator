@@ -9,7 +9,7 @@ from __future__ import annotations
 import os
 import shutil
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from config import MODEL_CATALOG, AppConfig, ModelMetadata
 from utils.logging_config import get_logger

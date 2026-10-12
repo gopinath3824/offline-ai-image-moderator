@@ -326,6 +326,10 @@ class ImageAnalysisView(ctk.CTkScrollableFrame):
 
     def _inference_worker(self) -> None:
         """Worker thread executing model inference and score evaluation."""
+        loaded = self.current_loaded_image
+        if loaded is None:
+            return
+
         start_time = time.time()
         try:
             # Enforce offline flags
@@ -339,7 +343,7 @@ class ImageAnalysisView(ctk.CTkScrollableFrame):
             )
 
             # Run prediction
-            raw_scores = classifier.predict(self.current_loaded_image.image)
+            raw_scores = classifier.predict(loaded.image)
             latency = time.time() - start_time
 
             # Evaluate with ScoringEngine

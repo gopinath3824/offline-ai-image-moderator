@@ -28,7 +28,7 @@ class ScanRecord:
     requires_review: bool = False
     highest_category: str = ""
     highest_score: float = 0.0
-    category_scores: Dict[str, float] = None  # type: ignore
+    category_scores: Optional[Dict[str, float]] = None
     model_id: str = ""
     model_name: str = ""
     inference_latency_sec: float = 0.0

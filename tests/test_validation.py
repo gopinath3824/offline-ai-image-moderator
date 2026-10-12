@@ -38,6 +38,7 @@ def test_nonexistent_file(temp_dir: Path) -> None:
     p = temp_dir / "does_not_exist.png"
     res = validate_image_file(p)
     assert res.is_valid is False
+    assert res.error_message is not None
     assert "not found" in res.error_message.lower()
 
 
@@ -48,6 +49,7 @@ def test_unsupported_format(temp_dir: Path) -> None:
 
     res = validate_image_file(p)
     assert res.is_valid is False
+    assert res.error_message is not None
     assert "unsupported" in res.error_message.lower()
 
 
@@ -58,6 +60,7 @@ def test_empty_file(temp_dir: Path) -> None:
 
     res = validate_image_file(p)
     assert res.is_valid is False
+    assert res.error_message is not None
     assert "empty" in res.error_message.lower()
 
 
@@ -68,6 +71,7 @@ def test_corrupted_image_file(temp_dir: Path) -> None:
 
     res = validate_image_file(p)
     assert res.is_valid is False
+    assert res.error_message is not None
     assert "corrupted" in res.error_message.lower() or "unreadable" in res.error_message.lower()
 
 
@@ -80,4 +84,5 @@ def test_oversized_dimension_image(temp_dir: Path) -> None:
     # Set max_dimension to 150
     res = validate_image_file(p, max_dimension=150)
     assert res.is_valid is False
+    assert res.error_message is not None
     assert "exceeds max" in res.error_message.lower()

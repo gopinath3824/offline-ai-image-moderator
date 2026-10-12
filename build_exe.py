@@ -27,8 +27,10 @@ def build_executable() -> int:
 
     # Check for PyInstaller
     try:
-        import PyInstaller
-        print(f"[OK] PyInstaller version: {PyInstaller.__version__}")
+        import importlib
+        pyinstaller = importlib.import_module("PyInstaller")
+        version = getattr(pyinstaller, "__version__", "unknown")
+        print(f"[OK] PyInstaller version: {version}")
     except ImportError:
         print("[ERROR] PyInstaller is not installed. Run: pip install pyinstaller", file=sys.stderr)
         return 1

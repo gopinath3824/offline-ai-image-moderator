@@ -43,7 +43,7 @@ class BatchItem:
     verdict: str = "Pending"
     highest_category: str = "—"
     highest_score: float = 0.0
-    category_scores: Dict[str, float] = None  # type: ignore
+    category_scores: Optional[Dict[str, float]] = None
     inference_latency_sec: float = 0.0
     error_message: str = ""
     file_size_display: str = ""

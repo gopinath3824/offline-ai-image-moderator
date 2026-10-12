@@ -484,9 +484,11 @@ class SettingsView(ctk.CTkScrollableFrame):
         if not meta:
             return
 
+        model_name = meta.name
+
         confirm = messagebox.askyesno(
             "Confirm Model Download",
-            f"Download '{meta.name}' (~{meta.size_mb} MB)?\n\n"
+            f"Download '{model_name}' (~{meta.size_mb} MB)?\n\n"
             "This will connect to Hugging Face Hub to download model weights. "
             "Once downloaded, inference runs 100% offline.\n\nProceed?",
         )
@@ -497,13 +499,13 @@ class SettingsView(ctk.CTkScrollableFrame):
 
         # Progress window dialog
         prog_dialog = ctk.CTkToplevel(self)
-        prog_dialog.title(f"Downloading {meta.name}")
+        prog_dialog.title(f"Downloading {model_name}")
         prog_dialog.geometry("460x180")
         prog_dialog.attributes("-topmost", True)
 
         dlg_title = ctk.CTkLabel(
             prog_dialog,
-            text=f"Downloading {meta.name}",
+            text=f"Downloading {model_name}",
             font=ctk.CTkFont(size=14, weight="bold"),
         )
         dlg_title.pack(pady=(20, 8))
@@ -533,7 +535,7 @@ class SettingsView(ctk.CTkScrollableFrame):
                     0,
                     lambda: (
                         prog_dialog.destroy(),
-                        messagebox.showinfo("Success", f"{meta.name} downloaded successfully and ready for offline use!"),
+                        messagebox.showinfo("Success", f"{model_name} downloaded successfully and ready for offline use!"),
                         self.refresh_models_list(),
                         self.app.dashboard_view.refresh(),
                     ),
