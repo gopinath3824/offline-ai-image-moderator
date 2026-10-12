@@ -6,11 +6,18 @@ file limits, scan history storage, and provides model download/removal tools.
 
 from __future__ import annotations
 
+import sys
 import threading
+from pathlib import Path
+from tkinter import messagebox
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 import customtkinter as ctk  # type: ignore
-from tkinter import messagebox
+
+# Allow running ui/settings.py directly
+root_dir = Path(__file__).resolve().parent.parent
+if str(root_dir) not in sys.path:
+    sys.path.insert(0, str(root_dir))
 
 from config import CATEGORY_DISPLAY_NAMES, MODEL_CATALOG, AppConfig
 from moderation.model_manager import ModelManager
@@ -607,3 +614,14 @@ class SettingsView(ctk.CTkScrollableFrame):
         except Exception as err:
             logger.error("Failed to save settings: %s", err)
             messagebox.showerror("Save Error", f"Failed to save settings: {err}")
+
+
+if __name__ == "__main__":
+    from ui.app import ModeratorApp
+    from utils.logging_config import setup_logging
+
+    setup_logging()
+    app = ModeratorApp()
+    app.navigate_to("settings")
+    app.mainloop()
+

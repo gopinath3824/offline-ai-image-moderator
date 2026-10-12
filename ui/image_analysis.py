@@ -7,11 +7,17 @@ verdict presentation, category score meters, and safety explanations.
 from __future__ import annotations
 
 import os
+import sys
 import threading
 import time
 from pathlib import Path
 from tkinter import filedialog, messagebox
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+# Allow running directly
+root_dir = Path(__file__).resolve().parent.parent
+if str(root_dir) not in sys.path:
+    sys.path.insert(0, str(root_dir))
 
 import customtkinter as ctk  # type: ignore
 
@@ -454,3 +460,14 @@ class ImageAnalysisView(ctk.CTkScrollableFrame):
         self.analyze_btn.configure(state="disabled", text="▶  Analyze Image")
         for bar in self.score_bars.values():
             bar.set_score(0.0)
+
+
+if __name__ == "__main__":
+    from ui.app import ModeratorApp
+    from utils.logging_config import setup_logging
+
+    setup_logging()
+    app = ModeratorApp()
+    app.navigate_to("single")
+    app.mainloop()
+
