@@ -136,6 +136,23 @@ def main() -> int:
         action="store_true",
         help="List available models and local installation status.",
     )
+    parser.add_argument(
+        "--api",
+        action="store_true",
+        help="Launch the FastAPI REST API server instead of desktop GUI.",
+    )
+    parser.add_argument(
+        "--host",
+        type=str,
+        default="127.0.0.1",
+        help="Host address for REST API server (default: 127.0.0.1).",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port for REST API server (default: 8000).",
+    )
 
     args = parser.parse_args()
 
@@ -161,6 +178,17 @@ def main() -> int:
             flag_th=args.flag_threshold,
             rev_th=args.review_threshold,
         )
+
+    if args.api:
+        import uvicorn
+        print("\n" + "=" * 60)
+        print(f"  {APP_NAME} v{APP_VERSION} — REST API Server")
+        print("=" * 60)
+        print(f"  Swagger Docs: http://{args.host}:{args.port}/docs")
+        print(f"  Endpoints:    http://{args.host}:{args.port}/api/v1")
+        print("=" * 60 + "\n")
+        uvicorn.run("api.app:app", host=args.host, port=args.port, log_level="info")
+        return 0
 
     # Launch desktop GUI
     from ui.app import ModeratorApp

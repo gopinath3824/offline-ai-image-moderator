@@ -164,6 +164,46 @@ If you are on an air-gapped PC or want to test immediately:
 
 ---
 
+## 8. REST API Server Mode 🚀
+
+You can also run Offline AI Image Moderator as a high-performance **REST API service** using FastAPI and Uvicorn.
+
+### Start the API Server
+```powershell
+# Method 1: Using server runner
+py server.py --host 127.0.0.1 --port 8000
+
+# Method 2: Via main.py flag
+py main.py --api --port 8000
+```
+
+### Interactive Documentation & Endpoints
+- **Swagger Interactive UI:** `http://localhost:8000/docs`
+- **ReDoc Documentation:** `http://localhost:8000/redoc`
+- **Health Check:** `GET http://localhost:8000/health`
+
+### Key Endpoints
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/moderate` | Moderate single image (`multipart/form-data`) |
+| `POST` | `/api/v1/moderate/batch` | Moderate multiple images in batch |
+| `GET` | `/api/v1/models` | List catalog models and offline readiness |
+| `POST` | `/api/v1/models/download` | Trigger local model weights download |
+| `GET` | `/api/v1/history` | Query scan audit trail with filters and pagination |
+| `GET` | `/api/v1/history/stats` | Retrieve aggregate moderation KPI statistics |
+| `GET` | `/api/v1/history/{id}` | Inspect full scores and record details |
+| `DELETE`| `/api/v1/history/{id}` | Delete a scan record |
+| `DELETE`| `/api/v1/history` | Clear entire audit database |
+
+### Example cURL Request:
+```bash
+curl -X POST "http://localhost:8000/api/v1/moderate" \
+  -F "file=@sample_test.png" \
+  -F "flag_threshold=0.70"
+```
+
+---
+
 ## 8. Offline Verification Checklist
 
 To prove and certify that image analysis runs strictly offline without network activity:

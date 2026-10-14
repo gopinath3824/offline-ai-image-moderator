@@ -124,3 +124,75 @@ def create_preview_thumbnail(
     thumb = image.copy()
     thumb.thumbnail(max_size, Image.Resampling.LANCZOS)
     return thumb
+
+
+def load_image_from_bytes(
+    data: bytes,
+    filename: str = "upload.jpg",
+    max_size_mb: int = 35,
+    max_dimension: int = 5000,
+) -> LoadedImageData:
+    """Safely loads an in-memory image byte stream for AI model inference.
+
+    - Validates byte size and dimensions.
+    - Applies EXIF orientation transpose.
+    - Composites transparency over an RGB white background.
+    - Normalizes to 3-channel RGB.
+    """
+    import io
+
+    size_bytes = len(data)
+    if size_bytes == 0:
+        raise ValueError("Image data is empty (0 bytes)")
+    if size_bytes > max_size_mb * 1024 * 1024:
+        raise ValueError(f"Image exceeds maximum allowed size of {max_size_mb} MB")
+
+    try:
+        with Image.open(io.BytesIO(data)) as raw_img:
+            w, h = raw_img.size
+            if w > max_dimension or h > max_dimension:
+                raise ValueError(
+                    f"Image dimensions ({w}x{h}) exceed maximum allowed dimension ({max_dimension}px)"
+                )
+
+            try:
+                oriented_img = ImageOps.exif_transpose(raw_img)
+            except Exception as exif_err:
+                logger.debug("EXIF transpose skipped for %s: %s", filename, exif_err)
+                oriented_img = raw_img
+
+            if oriented_img is None:
+                oriented_img = raw_img
+
+            orig_w, orig_h = oriented_img.size
+            orig_mode = raw_img.mode
+            orig_format = raw_img.format or Path(filename).suffix.lstrip(".").upper() or "JPEG"
+            has_transparency = "A" in orig_mode or orig_mode in ("RGBA", "LA", "PA")
+
+            if oriented_img.mode in ("RGBA", "LA") or (
+                oriented_img.mode == "P" and "transparency" in oriented_img.info
+            ):
+                rgba_img = oriented_img.convert("RGBA")
+                rgb_canvas = Image.new("RGB", rgba_img.size, (255, 255, 255))
+                alpha_channel = rgba_img.split()[3]
+                rgb_canvas.paste(rgba_img, mask=alpha_channel)
+                final_img = rgb_canvas
+            elif oriented_img.mode != "RGB":
+                final_img = oriented_img.convert("RGB")
+            else:
+                final_img = oriented_img.copy()
+
+        return LoadedImageData(
+            image=final_img,
+            file_path=Path(filename),
+            filename=filename,
+            dimensions=(orig_w, orig_h),
+            file_size_bytes=size_bytes,
+            format_name=orig_format,
+            color_mode=orig_mode,
+            has_transparency=has_transparency,
+        )
+
+    except Exception as err:
+        logger.error("Failed to load image from bytes for %s: %s", filename, err, exc_info=True)
+        raise RuntimeError(f"Failed to process image '{filename}': {str(err)}") from err
