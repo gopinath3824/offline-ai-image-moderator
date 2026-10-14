@@ -40,6 +40,7 @@ def test_save_and_retrieve_record(test_repo: HistoryRepository) -> None:
     assert fetched.verdict == "Flagged"
     assert fetched.requires_review is True
     assert fetched.highest_score == 0.88
+    assert fetched.category_scores is not None
     assert fetched.category_scores["nudity"] == 0.88
 
 

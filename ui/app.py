@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Dict, Optional
+from tkinter import ttk
+from typing import Any, Dict, Optional
 
 import customtkinter as ctk  # type: ignore
 
@@ -21,6 +22,44 @@ from ui.settings import SettingsView
 from utils.logging_config import get_logger, setup_logging
 
 logger = get_logger("app")
+
+
+def _patch_customtkinter_scroll() -> None:
+    """Ensure CustomTkinter CTkScrollableFrame scrolls with mouse wheel regardless of widget focus on Windows.
+
+    In Windows Tkinter, <MouseWheel> events have event.widget set to whichever widget currently
+    has keyboard focus (or the root window) rather than the widget under the mouse cursor.
+    This patch resolves the widget directly under (x_root, y_root) so scrolling works naturally on hover.
+    """
+    orig_mouse_wheel_all = getattr(ctk.CTkScrollableFrame, "_mouse_wheel_all", None)
+    if orig_mouse_wheel_all is None:
+        return
+
+    def _mouse_wheel_all_patched(self: ctk.CTkScrollableFrame, event: Any) -> Any:
+        target_widget = getattr(event, "widget", None)
+        try:
+            x_root = getattr(event, "x_root", None)
+            y_root = getattr(event, "y_root", None)
+            if x_root is not None and y_root is not None:
+                hovered = self.winfo_containing(x_root, y_root)
+                if hovered is not None:
+                    target_widget = hovered
+        except Exception:
+            pass
+
+        if self._check_if_valid_scroll(target_widget):
+            orig_widget = getattr(event, "widget", None)
+            event.widget = target_widget
+            try:
+                return orig_mouse_wheel_all(self, event)
+            finally:
+                event.widget = orig_widget
+        return None
+
+    ctk.CTkScrollableFrame._mouse_wheel_all = _mouse_wheel_all_patched
+
+
+_patch_customtkinter_scroll()
 
 
 class ModeratorApp(ctk.CTk):
@@ -50,12 +89,37 @@ class ModeratorApp(ctk.CTk):
 
         self._build_sidebar()
         self._build_content_area()
+        self._bind_mousewheel_routing()
 
         # Protocol for clean shutdown
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
         # Default start view
         self.navigate_to("dashboard")
+
+    def _bind_mousewheel_routing(self) -> None:
+        """Globally route mouse wheel events to Treeview tables when hovered."""
+        def _on_mousewheel(event: Any) -> Optional[str]:
+            try:
+                x_root = getattr(event, "x_root", None)
+                y_root = getattr(event, "y_root", None)
+                if x_root is None or y_root is None:
+                    return None
+                hovered = self.winfo_containing(x_root, y_root)
+            except Exception:
+                hovered = None
+
+            curr = hovered
+            while curr is not None:
+                if isinstance(curr, ttk.Treeview):
+                    delta = getattr(event, "delta", 0)
+                    if delta:
+                        curr.yview_scroll(-int(delta / 120), "units")
+                        return "break"
+                curr = getattr(curr, "master", None)
+            return None
+
+        self.bind_all("<MouseWheel>", _on_mousewheel, add=True)
 
     def _build_sidebar(self) -> None:
         """Create sleek left navigation sidebar."""
